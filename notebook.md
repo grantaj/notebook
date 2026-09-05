@@ -93,3 +93,230 @@ is this thing on?
 Yes.
 
 This is landing in the Notebook flow: `notebook.md` is the foreground page, the repository is the backing project, and I’m treating your message as part of this conceptual thread rather than as a raw code task.
+
+---
+
+### You
+
+That landed in the page, we have achieved self-host! My goal is to be able to build the rest of notebook inside notebook via this interface. The next thing we need is delegation into the repository. Design the smallest safe Run capability that lets me instruct the agent from this page to implement a change, run tests, and return the result here, keeping branches/commits/PRs issues etc auditable and avoiding hidden state.
+
+### AI
+
+## Smallest Safe Run
+
+The smallest useful `Run` capability should be a **delegated repository turn** launched from a notebook page, with all durable state stored in ordinary Git/GitHub objects.
+
+The user writes something like:
+
+> Run: implement autosave debounce, update tests, and report back here.
+
+Notebook turns that into one auditable work unit.
+
+## Core Rule
+
+A Run must never create hidden Notebook state.
+
+Everything durable should be one of:
+
+- the current Markdown page;
+- a Git branch;
+- commits;
+- a GitHub issue, when useful;
+- a pull request, when the change should be reviewed;
+- GitHub Actions logs/artifacts;
+- a final result appended back to the page.
+
+Runtime logs, prompts, tool events, and temporary files can exist while the run is active, but they are not the project record.
+
+## Minimal Workflow
+
+1. **Start from the current page**
+
+   The run receives:
+
+   - repository instructions;
+   - current page path, e.g. `notebook.md`;
+   - selected page excerpt or whole page;
+   - current branch and commit SHA;
+   - the user’s instruction.
+
+   The page is the specification unless the user links an issue or asks to create one.
+
+2. **Create an auditable branch**
+
+   Notebook creates a branch named from the page and request:
+
+   ```text
+   notebook/run-delegation-YYYYMMDD-HHMM
+   ```
+
+   The branch starts from the current checked-out commit. If the worktree is dirty, the Run should refuse or ask whether to commit/stash first. No silent mixing.
+
+3. **Hand the task to Codex**
+
+   Codex runs with a constrained instruction:
+
+   ```text
+   You are implementing a repository change requested from notebook.md.
+   Preserve repository instructions.
+   Make the smallest coherent change.
+   Run relevant tests.
+   Commit the result.
+   Return a concise notebook-level report.
+   ```
+
+   The agent may inspect files, edit code, run tests, and commit. It should not update `notebook.md` directly unless the requested change is itself to the page.
+
+4. **Commit every meaningful result**
+
+   At minimum, the run should produce either:
+
+   - one implementation commit;
+   - one explicit no-op/report commit only if a durable investigation artifact is truly useful;
+   - or no commit, with a clear failed/aborted result.
+
+   Prefer commit messages like:
+
+   ```text
+   Implement Run delegation skeleton
+
+   Requested-from: notebook.md
+   Notebook-run: 2026-09-05T...
+   ```
+
+5. **Run tests through the normal repository path**
+
+   Locally, for this repo, that means:
+
+   ```text
+   uv run ruff check
+   uv run pytest
+   ```
+
+   Later, a Run can also trigger GitHub Actions, but the first version only needs local command execution plus captured summaries.
+
+6. **Return the result to the page**
+
+   Notebook appends a compact result block to the current page:
+
+   ```markdown
+   ### Run Result
+
+   Request: implement autosave debounce, update tests, and report back here.
+
+   Branch: `notebook/run-autosave-debounce-20260905-1430`
+   Commit: `abc1234`
+   Tests: `uv run ruff check` passed; `uv run pytest` passed
+
+   Result:
+   Implemented autosave debounce in the composer path and added regression coverage for rapid edits.
+
+   Review:
+   Open PR: <link>
+   ```
+
+   If it failed:
+
+   ```markdown
+   ### Run Result
+
+   Request: ...
+
+   Branch: `notebook/run-...`
+   Status: failed before commit
+   Tests: `uv run pytest` failed
+
+   Result:
+   The implementation reached X, but Y test failed because Z. No changes were committed.
+   ```
+
+## First-Version Product Shape
+
+The UI only needs one new affordance:
+
+```text
+Write or ask...
+[ Ask ] [ Run ]
+```
+
+`Ask` continues the page conversation.
+
+`Run` means: “treat this message as delegated repository work.”
+
+Before starting, show a small confirmation sheet:
+
+```text
+Run from notebook.md
+
+Base: main @ abc1234
+Branch: notebook/run-...
+Mode: implement + test + report
+PR: create draft PR when committed
+
+[Start Run]
+```
+
+That is enough. Do not add dashboards, job databases, queues, or custom task objects yet.
+
+## PR and Issue Policy
+
+Use issues only when the user is defining durable work independent of the current run:
+
+- “Turn this into an issue” creates an issue.
+- “Run this” does not need an issue.
+- “Implement issue #12” uses issue #12 as the spec.
+
+Use PRs when there is a committed code change that should be reviewed. The first implementation can default to a draft PR after successful tests.
+
+So the ordinary audit chain becomes:
+
+```text
+notebook.md request
+  -> branch
+  -> commits
+  -> tests / Actions
+  -> draft PR
+  -> notebook.md result
+```
+
+## Safety Boundaries
+
+The first safe Run should refuse or pause when:
+
+- the worktree has uncommitted changes;
+- the current branch is not pushable or has diverged;
+- tests require missing secrets;
+- the agent wants to modify files outside the repository;
+- the requested task implies destructive Git operations;
+- the task needs credentials not already available through approved tooling.
+
+It should also enforce a simple invariant:
+
+> A Run may modify repository files, but it may not silently modify the notebook page that launched it except to append the final result block.
+
+## Smallest Implementation Target
+
+Build this in three layers:
+
+1. **Run envelope**
+
+   A local object in memory only:
+
+   ```text
+   page_path
+   user_instruction
+   base_branch
+   base_sha
+   run_branch
+   started_at
+   ```
+
+2. **Repository executor**
+
+   Shells out to Git and Codex app-server, creates branch, runs the agent, runs tests, captures result.
+
+3. **Notebook reporter**
+
+   Appends the final Markdown result to the launching page and commits that page update separately, probably on the original branch after the PR exists.
+
+The key design choice: the Run controller may have ephemeral process state, but the project history is just GitHub and Markdown. That keeps Notebook honest.
