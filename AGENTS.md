@@ -15,24 +15,39 @@ Notebook is a notebook-first interface to an ordinary GitHub repository. Preserv
 - Avoid configuration unless a feature truly cannot be inferred from ordinary repository structure.
 - The bootstrap should stay small. Do not solve hypothetical enterprise collaboration, databases, block editors, or IDE functionality.
 
+## Architecture
+
+Notebook is one product with two intended surfaces:
+
+- **ChatGPT-native:** a plugin/skill first, then an MCP Apps conceptual browser when the interaction model is proven. The ordinary ChatGPT conversation remains the conversation.
+- **Desktop:** a standalone notebook surface backed by Codex app-server rather than direct metered model API calls.
+
+Do not duplicate project state between these surfaces. Both operate on the same ordinary repository and should share the same conceptual interaction rules.
+
+For the ChatGPT plugin, prefer a skills-only proof before adding an MCP server. When repository tools are already available to the model, compose with them rather than building another GitHub connector merely for Notebook.
+
+For the desktop client, do not deepen the current direct OpenAI API integration. Treat it as bootstrap scaffolding until Codex app-server replaces the model/runtime boundary.
+
 ## Engineering rules
 
-- Python 3.11+.
+- Python 3.11+ for the existing standalone bootstrap.
 - Keep dependencies modest.
 - Use `ruff` and `pytest` in CI.
-- Keep GitHub and model-provider code behind small interfaces so they can be replaced.
+- Keep GitHub and model/runtime code behind small interfaces so they can be replaced.
 - Never expose tokens or API keys to rendered pages or logs.
 - Treat repository Markdown as untrusted for HTML rendering; raw HTML stays disabled.
 - Prefer tests around pure transformations and API boundaries.
+- Plugin packaging must remain ordinary files in the repository; do not introduce generated agent-memory files.
 
 ## Current milestone
 
-Make the self-hosting notebook loop pleasant before broadening scope:
+Prove the architecture before broadening features:
 
-1. open an ordinary repo;
-2. browse its Markdown pages;
-3. render Markdown/LaTeX;
-4. edit a page;
-5. ask AI on that page;
-6. commit the combined page back to GitHub;
-7. point Notebook at its own repository and continue development from `notebook.md`.
+1. install and exercise the skills-only Notebook plugin on real repositories;
+2. verify that ChatGPT can apply the Notebook workflow while using repository capabilities already available to it;
+3. add the smallest possible conceptual browser UI and test fullscreen + normal ChatGPT composer interaction on web;
+4. determine the viable path from development testing to mobile availability;
+5. separately prove Codex app-server as the standalone desktop runtime using ChatGPT authentication;
+6. only then expand issues/PRs/Actions/artifacts UX.
+
+The self-referential test remains important: `grantaj/notebook` and `notebook.md` should be among the first real projects used through both surfaces.
