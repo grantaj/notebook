@@ -25,7 +25,7 @@ Notebook is not an IDE and not a Notion clone. It should remain useful for softw
 
 Notebook can now be used from its own browser interface without an OpenAI API key or a GitHub token.
 
-The local host uses the current Git worktree as the repository and launches `codex app-server` as the AI runtime. Codex reuses the user's existing ChatGPT authentication. The browser is therefore the working surface; the Codex CLI is infrastructure underneath it.
+The local host uses the current Git worktree as the repository and invokes `codex exec` for each AI turn. Codex reuses the user's existing ChatGPT authentication. Each invocation is ephemeral and read-only: the durable notebook page itself supplies the conversational context, so there is no second hidden Codex conversation state for Notebook to preserve.
 
 Notebook is a uv project. From a clone of this repository on the self-host branch:
 
@@ -40,9 +40,9 @@ uv run uvicorn notebook_app.app:app --reload
 
 Open <http://127.0.0.1:8000>.
 
-Notebook detects the current Git worktree automatically and opens `notebook.md` when it exists. No `.env` file is required. The status under the composer should say `Codex · ChatGPT`.
+Notebook detects the current Git worktree automatically and opens `notebook.md` when it exists. No `.env` file is required. The status under the composer should say `Codex exec · ChatGPT`.
 
-Typing into **Write or ask…** does something consequential: Notebook sends the page and project instructions to Codex, appends the human/AI exchange to that same ordinary Markdown page, and makes a Git commit on the current branch. The collapsed **Source** panel is a direct-edit escape hatch and also commits the selected page.
+Typing into **Write or ask…** does something consequential: Notebook sends the current page and project instructions to Codex, appends the human/AI exchange to that same ordinary Markdown page, and makes a Git commit on the current branch. The collapsed **Source** panel is a direct-edit escape hatch and also commits the selected page.
 
 For this first self-host, Codex is deliberately read-only with respect to the worktree. Notebook itself owns the page commit. Repository-directed agent work such as implementing an issue remains a later layer and should return through auditable GitHub work rather than being hidden inside the page conversation.
 
@@ -69,9 +69,9 @@ The notebook browser is being kept host-neutral rather than building separate de
 The FastAPI shell serves the component and supplies two adapters:
 
 - a local Git worktree for Markdown pages and commits;
-- Codex app-server for subscription-backed AI turns.
+- `codex exec` for subscription-backed, ephemeral AI turns.
 
-This is the development and desktop path and is enough to let Notebook develop itself from `notebook.md`.
+This is enough for the first self-host because the notebook page itself is the durable conversation. A persistent app-server integration can be reconsidered later if Notebook needs streaming, richer agent events, or long-lived runtime state that cannot be reconstructed from the page.
 
 ### ChatGPT-native
 
@@ -119,7 +119,7 @@ A user should normally live at the top of this loop. Opening a source file, CI l
 The current sequence is deliberately empirical:
 
 1. **Skills-only behavior:** proven locally with Codex.
-2. **Self-hosted notebook surface:** use the browser UI + local Git + Codex app-server to continue this project from `notebook.md`.
+2. **Self-hosted notebook surface:** use the browser UI + local Git + ephemeral `codex exec` turns to continue this project from `notebook.md`.
 3. **ChatGPT-hosted component:** wire the same UI as an MCP Apps resource and test the surrounding real ChatGPT conversation when account/developer access permits.
 4. **Repository machinery:** surface issues, PRs, Actions, artifacts, and agent execution underneath pages without turning Notebook into an IDE.
 5. **Mobile:** publish the ChatGPT-native plugin once the hosted interaction is worth using.
