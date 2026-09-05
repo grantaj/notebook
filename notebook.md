@@ -68,3 +68,17 @@ This repository should become the first worked example. Notebook should ultimate
 - the desktop client should be able to direct Codex against this repository while foregrounding the same pages and concepts.
 
 The first self-reference threshold is now conceptual rather than implementation-specific: use the Notebook plugin to continue this project from `notebook.md`, then add the rich UI once that interaction proves natural.
+
+## Next architectural question
+
+The skills-only plugin is now good enough to test the central inversion: a normal ChatGPT conversation can treat this repository as a conceptual notebook while repository capabilities remain underneath it. The next architectural question is therefore narrower than "build the Notebook UI":
+
+> What is the smallest ChatGPT-native conceptual browser that makes repository-backed pages feel present without moving the conversation, project state, or GitHub workflow into a second product model?
+
+The answer should be an MCP Apps browser whose first job is orientation, not authoring infrastructure. It should expose ordinary Markdown pages by meaningful title, open the current page, and support switching between fullscreen page browsing and the normal ChatGPT composer. It should not introduce a notebook database, a separate chat object, a custom page format, a duplicate GitHub connector, or a desktop-style source tree.
+
+The experiment should be judged by whether the user can stay in the notebook loop:
+
+**Write. Ask. Run. Look.**
+
+If the browser makes it easier to choose the current page and inspect the thread while still using ChatGPT as the conversation surface, it validates the next layer. If it mainly recreates an IDE sidebar, a document manager, or another chat client, it is the wrong abstraction.
