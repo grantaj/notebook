@@ -27,16 +27,16 @@ Notebook can now be used from its own browser interface without an OpenAI API ke
 
 The local host uses the current Git worktree as the repository and launches `codex app-server` as the AI runtime. Codex reuses the user's existing ChatGPT authentication. The browser is therefore the working surface; the Codex CLI is infrastructure underneath it.
 
-From a clone of this repository on the self-host branch:
+Notebook is a uv project. From a clone of this repository on the self-host branch:
 
 ```bash
-# Requires Python 3.11+ and an already authenticated `codex` CLI.
+# Requires uv and an already authenticated `codex` CLI.
 git switch agent/issue-6-self-host-ui
-python -m venv .venv
-source .venv/bin/activate
-pip install -e '.[dev]'
-uvicorn notebook_app.app:app --reload
+uv sync
+uv run uvicorn notebook_app.app:app --reload
 ```
+
+`uv` creates and manages `.venv` automatically using the Python version pinned in `.python-version`. Development tools such as `pytest` and `ruff` live in the standard `dev` dependency group and are installed by the normal `uv sync`.
 
 Open <http://127.0.0.1:8000>.
 
@@ -47,6 +47,18 @@ Typing into **Write or ask…** does something consequential: Notebook sends the
 For this first self-host, Codex is deliberately read-only with respect to the worktree. Notebook itself owns the page commit. Repository-directed agent work such as implementing an issue remains a later layer and should return through auditable GitHub work rather than being hidden inside the page conversation.
 
 Optional local overrides are documented in `.env.example`. A GitHub API repository backend and metered OpenAI API backend remain available as fallbacks, but neither is the normal local path.
+
+## Development
+
+Use uv for dependency and command execution:
+
+```bash
+uv sync
+uv run ruff check .
+uv run pytest -q
+```
+
+The committed `uv.lock` is the reproducible dependency source for local development and CI.
 
 ## One component, two hosts
 
