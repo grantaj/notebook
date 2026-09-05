@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · Notebook{% endblock %}
+{% block content %}
+<article class="page">
+  <div class="crumb"><a href="/">← pages</a><span>{{ path }}</span></div>
+  <div class="rendered">{{ rendered | safe }}</div>
+
+  <details class="edit-panel">
+    <summary>Edit page</summary>
+    <form method="post" action="/p/{{ path }}/edit">
+      <textarea name="source" rows="24">{{ source }}</textarea>
+      <button type="submit">Commit edit</button>
+    </form>
+  </details>
+
+  <section class="ask-panel">
+    <form method="post" action="/p/{{ path }}/ask">
+      <textarea name="message" rows="3" placeholder="Write or ask…" required></textarea>
+      <button type="submit" {% if not model_enabled %}disabled{% endif %}>Ask</button>
+    </form>
+    {% if not model_enabled %}
+      <p class="muted small">Set OPENAI_API_KEY and OPENAI_MODEL to enable AI.</p>
+    {% endif %}
+  </section>
+</article>
+{% endblock %}
