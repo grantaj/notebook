@@ -1,0 +1,19 @@
+{
+  "name": "notebook",
+  "version": "0.1.0",
+  "description": "Notebook-first interaction for ordinary GitHub repositories.",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Notebook",
+    "shortDescription": "Work with a repository as a conceptual notebook",
+    "longDescription": "Foreground human/AI thinking, specifications, arguments, decisions and results while keeping files, issues, pull requests, Actions and artifacts as the ordinary GitHub machinery underneath.",
+    "developerName": "Alex Grant",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write"],
+    "defaultPrompt": [
+      "Open this repository as a conceptual notebook.",
+      "Continue the most relevant notebook thread in this project.",
+      "Use the current notebook page to decide what should happen next."
+    ]
+  }
+}
