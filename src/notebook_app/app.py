@@ -61,9 +61,16 @@ def build_model() -> tuple[CodexModel | OpenAIModel | None, str]:
         raise RuntimeError("NOTEBOOK_AI must be auto, codex, openai, or none")
 
     if choice in {"auto", "codex"} and shutil.which("codex"):
-        cwd_value = os.getenv("NOTEBOOK_CODEX_CWD", "").strip()
-        cwd = Path(cwd_value).expanduser().resolve() if cwd_value else None
-        return CodexModel(cwd=cwd), "Codex · ChatGPT"
+        cwd_value = (
+            os.getenv("NOTEBOOK_CODEX_CWD", "").strip()
+            or os.getenv("NOTEBOOK_WORKTREE", "").strip()
+        )
+        if cwd_value:
+            cwd = Path(cwd_value).expanduser().resolve()
+        else:
+            candidate = Path.cwd().resolve()
+            cwd = candidate if (candidate / ".git").exists() else None
+        return CodexModel(cwd=cwd), "Codex exec · ChatGPT"
     if choice == "codex":
         raise RuntimeError("NOTEBOOK_AI=codex but the codex CLI is not on PATH")
 
