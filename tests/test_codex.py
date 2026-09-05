@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import asyncio
-
-from notebook_app.codex import CodexModel, _Turn
+from notebook_app.codex import CodexModel
 
 
 def test_codex_prompt_keeps_notebook_page_foreground() -> None:
@@ -21,27 +19,12 @@ def test_codex_prompt_keeps_notebook_page_foreground() -> None:
     assert "Do not foreground source code." in prompt
 
 
-def test_completed_turn_sets_done() -> None:
-    turn = _Turn()
-    CodexModel._complete_turn(turn, {"status": "completed"})
-    assert turn.done.is_set()
-    assert turn.error is None
-
-
-def test_failed_turn_surfaces_error() -> None:
-    turn = _Turn()
-    CodexModel._complete_turn(
-        turn,
-        {"status": "failed", "error": {"message": "agent failed"}},
+def test_codex_exec_is_ephemeral_read_only_and_uses_stdin() -> None:
+    assert CodexModel._command() == (
+        "codex",
+        "exec",
+        "--ephemeral",
+        "--sandbox",
+        "read-only",
+        "-",
     )
-    assert turn.done.is_set()
-    assert turn.error == "agent failed"
-
-
-def test_turn_event_is_asyncio_compatible() -> None:
-    async def exercise() -> None:
-        turn = _Turn()
-        turn.done.set()
-        await turn.done.wait()
-
-    asyncio.run(exercise())
