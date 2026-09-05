@@ -320,3 +320,138 @@ Build this in three layers:
    Appends the final Markdown result to the launching page and commits that page update separately, probably on the original branch after the PR exists.
 
 The key design choice: the Run controller may have ephemeral process state, but the project history is just GitHub and Markdown. That keeps Notebook honest.
+
+---
+
+### You
+
+we should not require the user to use a magic spell "run". I guess we have the usual IDE permission problem for working with agents. For now I think we should just do whatever the user asks, and if are unsure ask the user to clarify or approve. I think we keep the set of possible actions small and sage - code edits, github operations, running repo tests and code. How should we handle this safely?
+
+### AI
+
+## Safe Default: Intent First, Approval When Risk Changes
+
+Yes: the user should not need a magic word like `Run`.
+
+Notebook should treat every composer message as an intent, then choose the smallest safe action that satisfies it. The interface can still have modes internally, but the user-facing rule is simpler:
+
+> Do what I appear to be asking. If the action has meaningful side effects, make the side effect visible before crossing the boundary.
+
+## Practical Action Ladder
+
+I would use a small graduated model:
+
+| User intent | Default behavior |
+|---|---|
+| Think, explain, critique, summarize | Answer directly in the page thread |
+| Inspect repository state | Read files, Git state, issues, PRs, logs as needed |
+| Run read-only commands | Run tests, typechecks, builds, searches, previews |
+| Edit code or pages | Make scoped edits when clearly requested |
+| Commit / branch / PR / issue | Ask or infer only when the request clearly implies durable GitHub state |
+| Destructive or ambiguous operations | Stop and ask |
+
+So:
+
+> “Why is the parser test failing?”
+
+Can inspect files and run tests.
+
+> “Fix the parser test failure.”
+
+Can edit code and run tests.
+
+> “Fix it and open a PR.”
+
+Can branch, commit, push, and open a PR, subject to credentials and dirty-worktree checks.
+
+> “Clean this up.”
+
+Probably needs clarification unless context makes the target obvious.
+
+## Permission Boundaries
+
+The first version should have only a few side-effect classes:
+
+1. **Read**
+   - inspect files;
+   - inspect Git state;
+   - inspect issues/PRs;
+   - read logs/artifacts.
+
+2. **Run**
+   - run repository-local commands;
+   - run tests;
+   - run formatters/linters;
+   - run build commands.
+
+3. **Edit**
+   - modify ordinary repository files;
+   - append or update the current notebook page when that is the requested foreground object.
+
+4. **GitHub/Git**
+   - create branch;
+   - commit;
+   - push;
+   - create issue;
+   - create PR;
+   - comment on issue/PR.
+
+That is enough for real work.
+
+Avoid broader capabilities for now: arbitrary external integrations, background daemons, secret management, scheduled jobs, hidden queues, custom task databases.
+
+## When To Ask
+
+Notebook should ask before proceeding when any of these are true:
+
+- the user’s intent is ambiguous;
+- the worktree has uncommitted changes not caused by this turn;
+- the agent would overwrite, delete, rename, or mass-format files;
+- the agent needs network or credentials beyond the repo’s normal tooling;
+- the change crosses from local edits into durable Git/GitHub state;
+- tests fail and the next step is not obvious;
+- the action would affect branches, releases, deployments, secrets, billing, or publication;
+- the agent is about to modify the launching page in a way other than normal conversation/result appending.
+
+## Better Than A Magic Spell
+
+The composer can stay singular:
+
+```text
+Write or ask...
+```
+
+Then Notebook classifies intent behind the scenes:
+
+- **Answer**: no side effects.
+- **Inspect**: read-only repository work.
+- **Work**: edits/runs/tests.
+- **Publish**: branch/commit/PR/issue.
+
+The UI can show a small pending-action chip when useful:
+
+```text
+Will edit code and run tests.
+[Proceed] [Adjust]
+```
+
+But it should not force the user to learn command words.
+
+## The Key Safety Rule
+
+The core rule should be:
+
+> The agent may act directly inside the repository when the user’s intent is clear, but every durable side effect must be ordinary, visible, and attributable.
+
+That means no hidden Notebook task state. The audit trail is still:
+
+```text
+notebook page intent
+-> repository reads / local commands
+-> file edits
+-> tests
+-> branch / commit / PR when appropriate
+-> result appended back to the page
+```
+
+This keeps the product natural: the user thinks in the notebook, the agent works in the repository, and the durable record remains Markdown plus Git/GitHub.
