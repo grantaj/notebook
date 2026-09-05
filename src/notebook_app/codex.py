@@ -189,8 +189,6 @@ class CodexModel:
                         self._complete_turn(self._turns[turn_id], turn_data)
                     elif turn_id:
                         self._completed_turns[turn_id] = turn_data
-        except asyncio.CancelledError:
-            raise
         finally:
             error = CodexError("Codex app-server stopped unexpectedly")
             for future in self._pending.values():
@@ -211,11 +209,8 @@ class CodexModel:
 
     async def _drain_stderr(self) -> None:
         assert self._proc is not None and self._proc.stderr is not None
-        try:
-            while await self._proc.stderr.readline():
-                pass
-        except asyncio.CancelledError:
-            raise
+        while await self._proc.stderr.readline():
+            pass
 
     @staticmethod
     def _prompt(
@@ -227,10 +222,14 @@ class CodexModel:
     ) -> str:
         parts = [
             "You are continuing a repository-backed Notebook page.",
-            "Treat the page as the foreground intellectual object; repository mechanics "
-            "are secondary.",
-            "Answer the user's question directly in useful Markdown. Do not claim repository "
-            "changes were made.",
+            (
+                "Treat the page as the foreground intellectual object; repository mechanics "
+                "are secondary."
+            ),
+            (
+                "Answer the user's question directly in useful Markdown. Do not claim repository "
+                "changes were made."
+            ),
             f"Repository: {repo}",
             f"Current page: {path}",
         ]
