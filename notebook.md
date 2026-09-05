@@ -81,3 +81,15 @@ This repository is the first worked example. The immediate test is no longer the
 5. continue the next development decision from that interface.
 
 If that feels natural, the application has crossed its first meaningful self-hosting threshold.
+
+---
+
+### You
+
+is this thing on?
+
+### AI
+
+Yes.
+
+This is landing in the Notebook flow: `notebook.md` is the foreground page, the repository is the backing project, and I’m treating your message as part of this conceptual thread rather than as a raw code task.
