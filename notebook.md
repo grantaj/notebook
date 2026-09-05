@@ -46,25 +46,38 @@ The preferred architecture is now two thin clients over the same ordinary reposi
 
 On mobile, the ideal Notebook is a ChatGPT plugin rather than a replacement chat client. The normal ChatGPT conversation remains the place where the human and AI talk, so conversation history and subscription-backed ChatGPT usage stay in ChatGPT. Notebook supplies the project-oriented conceptual behaviour and, later, a fullscreen notebook browser inside ChatGPT.
 
-The first feasibility test is deliberately skills-only: package the Notebook interaction model as a plugin skill and test whether ChatGPT can combine it with repository capabilities already available to the model. This proves the conceptual inversion before adding a custom UI or another GitHub integration.
+The first feasibility test was deliberately skills-only. It succeeded: Codex loaded the Notebook skill and spontaneously presented this repository as a conceptual thread rather than a source tree. That is enough evidence to move on from prompt behaviour to the actual notebook surface.
 
-If that succeeds, add an MCP Apps UI that presents the conceptual page browser in ChatGPT. The UI should remain subordinate to the normal conversation: the ChatGPT composer remains the place where the user asks, directs, and continues the thread.
+The hosted component should remain subordinate to the normal conversation: ChatGPT supplies the model and chat history; Notebook supplies the conceptual browser and project affordances. Its composer can send a follow-up into the surrounding ChatGPT conversation rather than maintaining a second chat.
 
 ### Desktop surface
 
-The standalone client remains useful on desktop, but it should not pay for ordinary OpenAI API inference when the user's ChatGPT subscription already includes Codex usage. The intended backend is Codex app-server, which is designed for custom clients and supplies authentication, conversation history, approvals, and streamed agent events.
+The standalone client should not pay for ordinary OpenAI API inference when the user's ChatGPT subscription already includes Codex usage. Its normal backend is therefore Codex app-server, which is designed for custom clients and supplies ChatGPT-backed authentication, conversation history, approvals, and streamed agent events.
 
-The desktop application therefore becomes another Notebook presentation over Codex plus the local/repository environment, not an independent AI platform.
+The desktop application is another Notebook presentation over Codex plus the local repository environment, not an independent AI platform.
 
 ### Shared invariant
 
 Neither surface owns project state. GitHub remains canonical. A clone must still make sense. Notebook-specific code may provide presentation, workflow guidance, caches, and runtime context assembly, but it must not introduce a hidden project database or proprietary page format.
 
+## First real self-host
+
+The first real self-host deliberately uses **one notebook component with two hosts**.
+
+Locally, the browser opens the current Git worktree, treats `notebook.md` as the default page, and uses `codex app-server` underneath the **Write or ask…** composer. A turn is appended to the same Markdown page and committed by Notebook on the current branch. No OpenAI API key or GitHub token is required. Codex is infrastructure; the human works in Notebook.
+
+Inside ChatGPT later, that same component switches host behavior: it consumes tool output supplied by ChatGPT, requests ChatGPT-native fullscreen, and sends composer text into the surrounding real ChatGPT conversation. The project model does not change when the host changes.
+
+This is intentionally enough to continue developing Notebook from the Notebook interface before solving GitHub issues/PRs/Actions, agent execution, or mobile publication.
+
 ## Self-reference
 
-This repository should become the first worked example. Notebook should ultimately be usable to develop Notebook through both surfaces:
+This repository is the first worked example. The immediate test is no longer theoretical:
 
-- the ChatGPT plugin should let a normal ChatGPT conversation treat `grantaj/notebook` as a conceptual notebook;
-- the desktop client should be able to direct Codex against this repository while foregrounding the same pages and concepts.
+1. launch Notebook from this worktree;
+2. open this page;
+3. continue this thread through the Notebook composer;
+4. confirm the exchange lands here as ordinary Markdown in an ordinary Git commit;
+5. continue the next development decision from that interface.
 
-The first self-reference threshold is now conceptual rather than implementation-specific: use the Notebook plugin to continue this project from `notebook.md`, then add the rich UI once that interaction proves natural.
+If that feels natural, the application has crossed its first meaningful self-hosting threshold.

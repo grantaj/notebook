@@ -31,8 +31,11 @@ For the desktop client, do not deepen the current direct OpenAI API integration.
 ## Engineering rules
 
 - Python 3.11+ for the existing standalone bootstrap.
+- Use `uv` for Python environment, dependency, lockfile, and command execution. Do not introduce `pip install`, hand-managed virtualenv setup, or a second dependency manifest into the normal workflow.
+- Keep `uv.lock` committed and CI locked to it.
+- Development dependencies belong in the standard `[dependency-groups].dev` group.
 - Keep dependencies modest.
-- Use `ruff` and `pytest` in CI.
+- Use `ruff` and `pytest` in CI via `uv run`.
 - Keep GitHub and model/runtime code behind small interfaces so they can be replaced.
 - Never expose tokens or API keys to rendered pages or logs.
 - Treat repository Markdown as untrusted for HTML rendering; raw HTML stays disabled.
