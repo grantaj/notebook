@@ -21,6 +21,24 @@ Notebook is not an IDE and not a Notion clone. It should remain useful for softw
 7. **GitHub supplies the machinery.** Issues represent work, PRs represent proposed changes, Actions supply computation, and artifacts supply outputs.
 8. **AI is a replaceable collaborator.** Notebook should not make one vendor's assistant the project owner.
 
+## Two surfaces, one product
+
+Notebook is being developed as two thin interaction surfaces over the same repository model.
+
+### ChatGPT-native
+
+The preferred mobile surface is a ChatGPT plugin. A normal ChatGPT conversation remains the conversation; Notebook contributes the project-oriented workflow and, later, an interactive conceptual notebook browser inside ChatGPT. This preserves ChatGPT history and subscription-backed ChatGPT usage instead of moving the user's work into another chat silo.
+
+The first plugin is intentionally skills-only and lives under `plugins/notebook/`. It exists to test the central proposition before adding custom infrastructure: can the Notebook interaction model combine naturally with repository capabilities already available to ChatGPT?
+
+A local marketplace entry under `.agents/plugins/marketplace.json` makes that plugin installable for development in supported desktop surfaces.
+
+### Desktop
+
+The existing standalone bootstrap remains available while the desktop architecture is proven. Its intended long-term model backend is Codex app-server rather than direct metered OpenAI API calls. Codex app-server is designed for custom clients and provides authentication, conversation history, approvals, and streamed agent events while allowing ChatGPT sign-in for subscription-backed Codex access.
+
+Both surfaces must preserve the same invariant: **GitHub is canonical; Notebook is presentation and interaction.**
+
 ## The basic loop
 
 ```text
@@ -45,9 +63,18 @@ think / write / ask
 
 A user should normally live at the top of this loop. Opening a source file, CI log, or diff is an escape hatch, not the default mode of work.
 
-## Bootstrap milestone
+## Current feasibility sequence
 
-The first version is deliberately primitive. It can:
+1. Install the skills-only Notebook plugin in a supported desktop ChatGPT/Codex surface.
+2. Use it on `grantaj/notebook`, `grantaj/entropy`, and `grantaj/nanoc` and verify that conceptual project interaction feels natural.
+3. Verify that the skill can compose with available repository capabilities rather than requiring a duplicate GitHub backend.
+4. Add a minimal MCP Apps UI for a conceptual page browser and test it in ChatGPT web/developer tooling where account support permits.
+5. Only after that proof, pursue mobile publication of the interactive plugin.
+6. Separately replace the standalone bootstrap's direct OpenAI model adapter with Codex app-server for the desktop path.
+
+## Existing standalone bootstrap
+
+The original proof-of-concept can:
 
 - open one configured GitHub repository;
 - discover ordinary Markdown pages without converting the repo;
@@ -57,46 +84,17 @@ The first version is deliberately primitive. It can:
 - append the human and AI contribution to that same ordinary Markdown file;
 - commit the resulting page back through the GitHub Contents API.
 
-This is enough for the first self-referential test: point Notebook at its own repository, open `notebook.md`, and continue designing Notebook from inside Notebook.
+It remains useful as disposable scaffolding while the ChatGPT-native and Codex-backed architectures are validated. Do not invest heavily in its direct OpenAI API path.
 
-Authentication is intentionally deferred in the bootstrap. The server reads a GitHub token and model key from environment variables. OAuth, richer context selection, issues/PRs/Actions/artifacts, and agentic repository execution come after the self-hosting loop works.
-
-## Run the bootstrap
-
-Python 3.11+ is recommended.
+To run it today:
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -e '.[dev]'
 cp .env.example .env
-# edit .env, then:
 set -a; source .env; set +a
 uvicorn notebook_app.app:app --reload
 ```
-
-Open <http://127.0.0.1:8000>.
-
-For self-hosting, set:
-
-```text
-GITHUB_REPO=grantaj/notebook
-GITHUB_BRANCH=main
-```
-
-and open `notebook.md` in the app.
-
-## What comes next
-
-The next tranche should preserve the same inversion rather than expand sideways:
-
-- repository picker and GitHub OAuth;
-- conceptual/recent page browser rather than a source-code tree;
-- visible context selection;
-- issues and PRs as related work beneath pages;
-- GitHub Actions as runnable computation;
-- artifact viewing, especially PDF/image/text outputs;
-- an agent action path for instructions such as `execute #31`, with changes returning as summaries/results rather than forcing the user into code;
-- installable/mobile PWA polish.
 
 The application should resist features that turn it into an IDE, a database-oriented workspace, or an agent-memory filesystem.
