@@ -17,7 +17,7 @@ class LocalRepo:
         if not (self.root / ".git").exists():
             raise RuntimeError(f"{self.root} is not a Git worktree")
         self.repo = self._repo_name()
-        self.branch = self._git("branch", "--show-current").strip() or "HEAD"
+        self.branch = self._git("branch", "--show-current").stdout.strip() or "HEAD"
 
     async def close(self) -> None:
         return None
