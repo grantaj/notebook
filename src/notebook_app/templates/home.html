@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{{ repo }} · Notebook{% endblock %}
+{% block content %}
+<section class="home">
+  <h1>{{ repo.split('/')[-1] }}</h1>
+  <p class="muted">Notebook pages</p>
+  <nav class="page-list">
+    {% for page in pages %}
+      <a href="/p/{{ page.path }}">{{ page.label }}</a>
+    {% else %}
+      <p>No Markdown pages found.</p>
+    {% endfor %}
+  </nav>
+</section>
+{% endblock %}
