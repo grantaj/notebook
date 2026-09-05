@@ -16,6 +16,7 @@ from pydantic import BaseModel
 from .codex import CodexError, CodexModel
 from .domain import append_exchange, page_title
 from .github import GitHubError, GitHubPage, GitHubRepo
+from .local_repo import LocalRepo
 from .model import ModelError, OpenAIModel
 
 HERE = Path(__file__).parent
@@ -32,11 +33,26 @@ class EditRequest(BaseModel):
     source: str
 
 
-def required_env(name: str) -> str:
-    value = os.getenv(name, "").strip()
-    if not value:
-        raise RuntimeError(f"Missing required environment variable {name}")
-    return value
+def build_repo() -> GitHubRepo | LocalRepo:
+    worktree_value = os.getenv("NOTEBOOK_WORKTREE", "").strip()
+    if worktree_value:
+        return LocalRepo(Path(worktree_value))
+    cwd = Path.cwd()
+    if (cwd / ".git").exists():
+        return LocalRepo(cwd)
+
+    token = os.getenv("GITHUB_TOKEN", "").strip()
+    repo = os.getenv("GITHUB_REPO", "").strip()
+    if token and repo:
+        return GitHubRepo(
+            token=token,
+            repo=repo,
+            branch=os.getenv("GITHUB_BRANCH", "main"),
+        )
+    raise RuntimeError(
+        "Run Notebook from a Git worktree, set NOTEBOOK_WORKTREE, or configure "
+        "GITHUB_TOKEN and GITHUB_REPO"
+    )
 
 
 def build_model() -> tuple[CodexModel | OpenAIModel | None, str]:
@@ -62,11 +78,7 @@ def build_model() -> tuple[CodexModel | OpenAIModel | None, str]:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    repo = GitHubRepo(
-        token=required_env("GITHUB_TOKEN"),
-        repo=required_env("GITHUB_REPO"),
-        branch=os.getenv("GITHUB_BRANCH", "main"),
-    )
+    repo = build_repo()
     model, model_label = build_model()
     app.state.repo = repo
     app.state.model = model
@@ -81,7 +93,7 @@ app = FastAPI(title="Notebook", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
 
 
-def repo_for(request: Request) -> GitHubRepo:
+def repo_for(request: Request) -> GitHubRepo | LocalRepo:
     return request.app.state.repo
 
 
