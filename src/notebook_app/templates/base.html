@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Notebook{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body>
+  <header>
+    <a href="/" class="brand">Notebook</a>
+    <span class="repo">{{ repo }}</span>
+  </header>
+  <main>{% block content %}{% endblock %}</main>
+</body>
+</html>
